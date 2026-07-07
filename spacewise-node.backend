@@ -1,0 +1,62 @@
+job "spacewise-node" {
+  datacenters = ["dc1"]
+  type = "service"
+
+  group "spacewise_node"{
+    count = 1
+    spread {
+      attribute = "${node.unique.id}"
+    }
+    network {
+      mode = "host"
+      dns {
+        servers = ["172.17.0.1", "8.8.8.8", "8.8.4.4"]
+      }
+
+      port "http" {
+        to = 8011
+        static = 8011
+      }
+    }
+    volume "maps" {
+        type      = "host"
+        read_only = false
+        source    = "maps"
+      }
+  task "spacewise_node" {
+    driver = "docker"
+
+    config {
+      image = "spacewise-node:v1"
+      ports = [
+        "http"
+      ]
+      volumes = [
+        "local/nomad.env:/node_backend/env/nomad.env"
+      ]
+    }
+
+    env {
+        MAP_LOCATION = "/opt/maps"
+    }
+
+    volume_mount {
+        volume      = "maps"
+        destination = "/pigeon_nodejs_backend/opt/maps"
+        read_only   = false
+      }
+
+    resources {
+      cpu = 512
+      memory = 256
+      memory_max = 512 
+    }
+
+    service {
+        name = "spacewisenode"
+        port = "http"
+        provider = "nomad"
+        }
+  }
+  }
+}
